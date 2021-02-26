@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30503.244
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quickhull", "Quickhull\Quickhull.csproj", "{9DBB4157-57FA-4A86-9FB7-F3916ECCDDBF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9DBB4157-57FA-4A86-9FB7-F3916ECCDDBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DBB4157-57FA-4A86-9FB7-F3916ECCDDBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DBB4157-57FA-4A86-9FB7-F3916ECCDDBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DBB4157-57FA-4A86-9FB7-F3916ECCDDBF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {36099DF2-8159-40B5-89FF-8B1BFFDEDE60}
+	EndGlobalSection
+EndGlobal
