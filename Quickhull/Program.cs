@@ -64,7 +64,6 @@ namespace Quickhull {
         public static void Main(string[] args) {
             Random r = new Random();
             int size = 1600;
-            int radius = size / 2;
 
             Vector2 center = new Vector2(size / 2, size / 2);
 
@@ -76,12 +75,14 @@ namespace Quickhull {
 
                     g.FillRectangle(Brushes.White, 0, 0, size, size);
 
-                    Color[] colors = {
-                        Color.Red, Color.Blue, Color.Green
-                    };
 
-                    foreach (Color c in colors) {
-                        int pointCount = 1000;
+                    int iterations = 10;
+                    int interval = 255 / iterations;
+                    for(int i = 0; i < iterations; i++) {
+                        Color c = Color.FromArgb(i * interval, 0, 255 - i * interval);
+                        int radius = (size / 2) * i / 10;
+
+                        int pointCount = 200;
                         List<Vector2> points = new List<Vector2>(
                             Enumerable.Range(0, pointCount).Select(
                                 //p => new Vector2(r.Next(size), r.Next(size))
@@ -91,7 +92,7 @@ namespace Quickhull {
                             );
 
                         points.ForEach(p => g.FillEllipse(new SolidBrush(c), p.X - 1, p.Y - 1, 3, 3));
-                        points.ForEach(p => g.DrawLine(new Pen(c, 1), p.X - 2, p.Y, p.X + 2, p.Y));
+                        //points.ForEach(p => g.DrawLine(new Pen(c, 1), p.X - 2, p.Y, p.X + 2, p.Y));
 
                         var hull = GetHull(points);
                         DrawHull(g, c, hull);
