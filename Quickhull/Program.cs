@@ -136,8 +136,11 @@ namespace Quickhull {
                     int iterations = 4;
                     int interval = 255 / iterations;
                     for(int i = 0; i < iterations; i++) {
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(102, Color.White)), 0, 0, size, size);
+
+
                         Color c = Color.FromArgb(i * interval, 0, 255 - i * interval);
-                        int radius = size/4 + ((size / 2 - size/4) / iterations) * i;
+                        int radius = size/2 - ((size/2 - size/8) / iterations) * i;
 
                         int pointCount = 500;
                         List<Vector2> points = new List<Vector2>(
