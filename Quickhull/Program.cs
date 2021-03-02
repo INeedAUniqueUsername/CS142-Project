@@ -20,12 +20,16 @@ namespace Quickhull {
             return new Point((int)v.X, (int)v.Y);
         }
         public static double Angle(Vector2 v) {
-            return Math.Atan2(v.Y, v.X);
+            var angle = Math.Atan2(v.Y, v.X);
+            while(angle < 0) {
+                angle += Math.PI * 2;
+            }
+            return angle;
         }
 
-        public static bool LeftOf(Vector2 a, Vector2 b, Vector2 p) {
+        public static bool RightOf(Vector2 a, Vector2 b, Vector2 p) {
             Vector2 ab = b - a;
-            Vector2 left = Rotate(ab, Math.PI / 2);
+            Vector2 left = Rotate(ab, -Math.PI / 2);
             return Vector2.Dot(left, p - a) > 0;
         }
         public static List<Vector2> GetHull(List<Vector2> points) {
@@ -42,9 +46,15 @@ namespace Quickhull {
             }
 
             points.Sort((p1, p2) => {
+                if(p1 == hullPoint) {
+                    return -1;
+                } else if(p2 == hullPoint) {
+                    return 1;
+                }
+
                 var o1 = p1 - hullPoint;
                 var o2 = p2 - hullPoint;
-                var result = -Angle(o1).CompareTo(Angle(o2));
+                var result = Angle(o1).CompareTo(Angle(o2));
                 if(result == 0) {
                     result = -o1.Length().CompareTo(o2.Length());
                 }
@@ -52,13 +62,14 @@ namespace Quickhull {
             });
 
 
-            int index = (firstIndex + 1) % points.Count;
+            int index = points.IndexOf(hullPoint);
 
             Vector2 nextPoint = hullPoint;
 
             int frame = 0;
             Directory.CreateDirectory("Frames");
             do {
+                /*
                 frame++;
                 using (Bitmap b = new Bitmap(size, size)) {
                     using (Graphics g = Graphics.FromImage(b)) {
@@ -68,32 +79,40 @@ namespace Quickhull {
                     }
                     b.Save($"Frames/{frame}.png", ImageFormat.Png);
                 }
-
-
+                */
                 hull.Add(hullPoint);
+
+Advance:
                 index = (index + 1) % points.Count;
+                nextPoint = points[index];
 
                 if (hull.Count > 1) {
-                    nextPoint = hull.First();
-                } else {
-                    nextPoint = points[index];
-                    index = (index + 1) % points.Count;
-                }
-                
-                for (int i = index; i != firstIndex; i = (i + 1)%points.Count) {
-                    var p = points[i];
-                    if (LeftOf(hull.Last(), nextPoint, p)) {
-                        index = i;
-                        nextPoint = p;
+                    if(RightOf(hull[0], hull[1], nextPoint)) {
+                        goto Advance;
                     }
+                    for (int i = hull.Count - 1; i > 0; i--) {
+                        if (RightOf(hull[i - 1], hull[i], nextPoint)) {
+                            hull.RemoveAt(i);
+                        } else {
+                            break;
+                        }
+                    }
+
                 }
                 hullPoint = nextPoint;
             } while (nextPoint != hull.First());
+
 
             return hull;
         }
         public static void DrawPoints(Graphics g, Color c, List<Vector2 > points) {
             points.ForEach(p => g.FillEllipse(new SolidBrush(c), p.X - 1, p.Y - 1, 3, 3));
+
+            return;
+            for(int i = 0; i < points.Count; i++) {
+                g.DrawString($"{i}", new Font("Consolas", 8), Brushes.Black, points[i].X, points[i].Y);
+            }
+
         }
         public static void DrawHull(Graphics g, Color c, List<Vector2 > hull) {
             if (hull.Any()) {
@@ -145,13 +164,13 @@ namespace Quickhull {
                         //DrawHull(g, c, points);
 
                         var hull = GetHull(points);
-                        DrawHull(g, c, points);
+                        //DrawHull(g, c, points);
                         DrawHull(g, c, hull);
 
                     }
 
                 }
-                frame.Save($"Hull.png", ImageFormat.Png);
+                frame.Save($"Full.png", ImageFormat.Png);
             }
         }
     }
