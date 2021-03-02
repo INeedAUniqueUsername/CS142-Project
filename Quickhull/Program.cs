@@ -8,7 +8,7 @@ using System.Numerics;
 using static Quickhull.Program;
 namespace Quickhull {
     public class Program {
-        public static Vector2 Rotate(Vector2 v, double delta) {
+        public static Vector2 Rotate(in Vector2 v, double delta) {
             var angle = (Angle(v) + delta);
             var length = v.Length();
             return Polar(angle, length);
@@ -16,21 +16,24 @@ namespace Quickhull {
         public static Vector2 Polar(double angle, double length) {
             return new Vector2((float)(length * Math.Cos(angle)), (float)(length * Math.Sin(angle)));
         }
-        public static Point Point(Vector2 v) {
+        public static Point Point(in Vector2 v) {
             return new Point((int)v.X, (int)v.Y);
         }
-        public static double Angle(Vector2 v) {
+        public static double Angle(in Vector2 v) {
             var angle = Math.Atan2(v.Y, v.X);
             while(angle < 0) {
                 angle += Math.PI * 2;
             }
             return angle;
         }
+        public static double Cross(in Vector2 a, in Vector2 b) {
+            return a.X * b.Y - a.Y * b.X;
+        }
 
-        public static bool RightOf(Vector2 a, Vector2 b, Vector2 p) {
+        public static bool RightOf(in Vector2 a, in Vector2 b, in Vector2 p) {
             Vector2 ab = b - a;
-            Vector2 right = Rotate(ab, -Math.PI / 2);
-            return Vector2.Dot(right, p - a) > 0;
+            Vector2 ap = p - a;
+            return Cross(ap, ab) > 0;
         }
         public static List<Vector2> GetHull(List<Vector2> points) {
             List<Vector2> hull = new List<Vector2>();
