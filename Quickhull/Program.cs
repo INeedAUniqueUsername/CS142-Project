@@ -35,7 +35,7 @@ namespace Quickhull {
             Vector2 hullPoint = points[0];
             for (int i = 0; i < points.Count; i++) {
                 var p = points[i];
-                if (p.X < hullPoint.X) {
+                if (p.X > hullPoint.X) {
                     firstIndex = i;
                     hullPoint = p;
                 }
@@ -51,11 +51,10 @@ namespace Quickhull {
                 return result;
             });
 
-            int afterFirstIndex = (firstIndex + 1) % points.Count;
 
-            int index = afterFirstIndex;
+            int index = (firstIndex + 1) % points.Count;
 
-            Vector2 endpoint;
+            Vector2 nextPoint = hullPoint;
 
             int frame = 0;
             Directory.CreateDirectory("Frames");
@@ -72,18 +71,24 @@ namespace Quickhull {
 
 
                 hull.Add(hullPoint);
-                endpoint = points[index];
                 index = (index + 1) % points.Count;
 
-                for(int i = index; i != firstIndex; i = (i + 1)%points.Count) {
+                if (hull.Count > 1) {
+                    nextPoint = hull.First();
+                } else {
+                    nextPoint = points[index];
+                    index = (index + 1) % points.Count;
+                }
+                
+                for (int i = index; i != firstIndex; i = (i + 1)%points.Count) {
                     var p = points[i];
-                    if (LeftOf(hullPoint, endpoint, p)) {
+                    if (LeftOf(hull.Last(), nextPoint, p)) {
                         index = i;
-                        endpoint = p;
+                        nextPoint = p;
                     }
                 }
-                hullPoint = endpoint;
-            } while (endpoint != hull.First());
+                hullPoint = nextPoint;
+            } while (nextPoint != hull.First());
 
             return hull;
         }
@@ -115,11 +120,6 @@ namespace Quickhull {
 
             using (Bitmap frame = new Bitmap(size, size)) {
                 using (Graphics g = Graphics.FromImage(frame)) {
-
-
-                    g.FillRectangle(Brushes.White, 0, 0, size, size);
-
-
                     int iterations = 1;
                     int interval = 255 / iterations;
                     for(int i = 0; i < iterations; i++) {
@@ -134,6 +134,9 @@ namespace Quickhull {
                                 p => center + Polar(r.NextDouble() * (Math.PI * 2), r.Next(radius * (1 - p / pointCount)))
                                 )
                             );
+
+
+                        g.FillRectangle(Brushes.White, 0, 0, size, size);
                         DrawPoints(g, c, points);
                         //points.ForEach(p => g.DrawLine(new Pen(c, 1), p.X - 2, p.Y, p.X + 2, p.Y));
 
@@ -143,7 +146,7 @@ namespace Quickhull {
 
                         var hull = GetHull(points);
                         DrawHull(g, c, points);
-                        //DrawHull(g, c, hull);
+                        DrawHull(g, c, hull);
 
                     }
 
