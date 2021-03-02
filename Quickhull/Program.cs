@@ -29,8 +29,8 @@ namespace Quickhull {
 
         public static bool RightOf(Vector2 a, Vector2 b, Vector2 p) {
             Vector2 ab = b - a;
-            Vector2 left = Rotate(ab, -Math.PI / 2);
-            return Vector2.Dot(left, p - a) > 0;
+            Vector2 right = Rotate(ab, -Math.PI / 2);
+            return Vector2.Dot(right, p - a) > 0;
         }
         public static List<Vector2> GetHull(List<Vector2> points) {
             List<Vector2> hull = new List<Vector2>();
@@ -111,10 +111,8 @@ namespace Quickhull {
 
                 var p = new Pen(c, 1);
                 for (int index = 0; index + 1 < hull.Count; index++) {
-
                     var p1 = hull[index];
                     var p2 = hull[index + 1];
-
                     g.DrawLine(p, Point(p1), Point(p2));
                 }
                 g.DrawLine(p, Point(hull.First()), Point(hull.Last()));
@@ -123,9 +121,6 @@ namespace Quickhull {
         static int size = 1600;
         public static void Main(string[] args) {
             Random r = new Random();
-
-
-
             Vector2 center = new Vector2(size / 2, size / 2);
             //points.Sort((a, b) => Angle(a).CompareTo(Angle(b)));
 
