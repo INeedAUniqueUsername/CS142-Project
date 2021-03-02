@@ -82,23 +82,15 @@ namespace Quickhull {
                 */
                 hull.Add(hullPoint);
 
-Advance:
                 index = (index + 1) % points.Count;
                 nextPoint = points[index];
 
-                if (hull.Count > 1) {
-                    if(RightOf(hull[0], hull[1], nextPoint)) {
-                        goto Advance;
+                for (int i = hull.Count - 1; i > 0; i--) {
+                    if (RightOf(hull[i - 1], hull[i], nextPoint)) {
+                        hull.RemoveAt(i);
                     }
-                    for (int i = hull.Count - 1; i > 0; i--) {
-                        if (RightOf(hull[i - 1], hull[i], nextPoint)) {
-                            hull.RemoveAt(i);
-                        } else {
-                            break;
-                        }
-                    }
-
                 }
+
                 hullPoint = nextPoint;
             } while (nextPoint != hull.First());
 
@@ -139,11 +131,13 @@ Advance:
 
             using (Bitmap frame = new Bitmap(size, size)) {
                 using (Graphics g = Graphics.FromImage(frame)) {
-                    int iterations = 1;
+                    g.FillRectangle(Brushes.White, 0, 0, size, size);
+
+                    int iterations = 4;
                     int interval = 255 / iterations;
                     for(int i = 0; i < iterations; i++) {
                         Color c = Color.FromArgb(i * interval, 0, 255 - i * interval);
-                        int radius = size/4 + (size / 2 - size/4) * i / 10;
+                        int radius = size/4 + ((size / 2 - size/4) / iterations) * i;
 
                         int pointCount = 500;
                         List<Vector2> points = new List<Vector2>(
@@ -155,7 +149,7 @@ Advance:
                             );
 
 
-                        g.FillRectangle(Brushes.White, 0, 0, size, size);
+                        
                         DrawPoints(g, c, points);
                         //points.ForEach(p => g.DrawLine(new Pen(c, 1), p.X - 2, p.Y, p.X + 2, p.Y));
 
