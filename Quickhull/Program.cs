@@ -88,11 +88,28 @@ namespace Quickhull {
                 index = (index + 1) % points.Count;
                 nextPoint = points[index];
 
+                //Remove any old edges that no longer work
                 for (int i = hull.Count - 1; i > 0; i--) {
                     if (RightOf(hull[i - 1], hull[i], nextPoint)) {
                         hull.RemoveAt(i);
+                    } else {
+                        //There should not be any bad edges after this point
+                        break;
                     }
                 }
+
+                //Our initial edges might start at the center point
+                //Make sure to remove them when we reach the end
+                for (int i = 1; i < hull.Count; i++) {
+                    if (RightOf(hull[i - 1], hull[i], nextPoint)) {
+                        hull.RemoveAt(i);
+                    } else {
+                        //There should not be any bad edges after this point
+                        break;
+                    }
+                }
+
+
 
                 hullPoint = nextPoint;
             } while (nextPoint != hull.First());
@@ -127,6 +144,7 @@ namespace Quickhull {
             Vector2 center = new Vector2(size / 2, size / 2);
             //points.Sort((a, b) => Angle(a).CompareTo(Angle(b)));
 
+            Start:
             using (Bitmap frame = new Bitmap(size, size)) {
                 using (Graphics g = Graphics.FromImage(frame)) {
                     g.FillRectangle(Brushes.White, 0, 0, size, size);
@@ -136,17 +154,22 @@ namespace Quickhull {
                     List<Vector2> points = new List<Vector2>(
                         Enumerable.Range(0, pointCount).Select(
                             //p => new Vector2(r.Next(size - 4) + 2, r.Next(size - 4) + 2)
-                            p => center + Polar(r.NextDouble() * Math.PI*2, r.NextDouble() * (size / 2) * (1 - p / pointCount))
-                        ));
+                            //p => center + Polar(r.NextDouble() * Math.PI*2, r.NextDouble() * (size / 2) * (1 - p / pointCount))
+                            p => center + Polar(r.NextDouble() * Math.PI * 2, size / 4)
+                        )); ;
 
                     var c = Color.Black;
                     DrawPoints(g, c, points);
-                    var hull = GetHull(points);
-                    DrawHull(g, Color.Red, hull);
 
+                    DateTime start = DateTime.Now;
+                    var hull = GetHull(points);
+                    DateTime end = DateTime.Now;
+                    DrawHull(g, Color.Red, hull);
+                    double seconds = (end - start).TotalSeconds;
+                    frame.Save($"Full{Directory.GetFiles(".").Length} - {seconds} seconds.png", ImageFormat.Png);
                 }
-                frame.Save($"Full.png", ImageFormat.Png);
             }
+            //goto Start;
         }
     }
 }
