@@ -93,21 +93,18 @@ namespace Quickhull {
                     if (RightOf(hull[i - 1], hull[i], nextPoint)) {
                         hull.RemoveAt(i);
                     } else {
-                        //There should not be any bad edges after this point
-                        break;
                     }
                 }
-
+                /*
                 //Our initial edges might start at the center point
                 //Make sure to remove them when we reach the end
                 for (int i = 1; i < hull.Count; i++) {
                     if (RightOf(hull[i - 1], hull[i], nextPoint)) {
                         hull.RemoveAt(i);
                     } else {
-                        //There should not be any bad edges after this point
-                        break;
                     }
                 }
+                */
 
 
 
@@ -146,6 +143,8 @@ namespace Quickhull {
 
             Start:
             using (Bitmap frame = new Bitmap(size, size)) {
+
+                string name;
                 using (Graphics g = Graphics.FromImage(frame)) {
                     g.FillRectangle(Brushes.White, 0, 0, size, size);
 
@@ -153,9 +152,9 @@ namespace Quickhull {
                     int pointCount = 1000000;
                     List<Vector2> points = new List<Vector2>(
                         Enumerable.Range(0, pointCount).Select(
-                            //p => new Vector2(r.Next(size - 4) + 2, r.Next(size - 4) + 2)
+                            p => new Vector2(r.Next(size - 4) + 2, r.Next(size - 4) + 2)
                             //p => center + Polar(r.NextDouble() * Math.PI*2, r.NextDouble() * (size / 2) * (1 - p / pointCount))
-                            p => center + Polar(r.NextDouble() * Math.PI * 2, size / 4)
+                            //p => center + Polar(r.NextDouble() * Math.PI * 2, size / 4)
                         )); ;
 
                     var c = Color.Black;
@@ -166,8 +165,10 @@ namespace Quickhull {
                     DateTime end = DateTime.Now;
                     DrawHull(g, Color.Red, hull);
                     double seconds = (end - start).TotalSeconds;
-                    frame.Save($"Full{Directory.GetFiles(".").Length} - {seconds} seconds.png", ImageFormat.Png);
+
+                    name = $"Full{Directory.GetFiles(".").Length} - {seconds} seconds.png";
                 }
+                frame.Save(name, ImageFormat.Png);
             }
             //goto Start;
         }
