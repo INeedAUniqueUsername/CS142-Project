@@ -131,38 +131,18 @@ namespace Quickhull {
                 using (Graphics g = Graphics.FromImage(frame)) {
                     g.FillRectangle(Brushes.White, 0, 0, size, size);
 
-                    int iterations = 4;
-                    int interval = 255 / iterations;
-                    for(int i = 0; i < iterations; i++) {
-                        g.FillRectangle(new SolidBrush(Color.FromArgb(102, Color.White)), 0, 0, size, size);
 
+                    int pointCount = 1000000;
+                    List<Vector2> points = new List<Vector2>(
+                        Enumerable.Range(0, pointCount).Select(
+                            //p => new Vector2(r.Next(size - 4) + 2, r.Next(size - 4) + 2)
+                            p => center + Polar(r.NextDouble() * Math.PI*2, r.NextDouble() * (size / 2) * (1 - p / pointCount))
+                        ));
 
-                        Color c = Color.FromArgb(i * interval, 0, 255 - i * interval);
-                        int radius = size/2 - ((size/2 - size/8) / iterations) * i;
-
-                        int pointCount = 500;
-                        List<Vector2> points = new List<Vector2>(
-                            Enumerable.Range(0, pointCount).Select(
-                                //p => new Vector2(r.Next(size), r.Next(size))
-                                //p => center + new Vector2(r.Next(size/3), r.Next(size/3))
-                                p => center + Polar(r.NextDouble() * (Math.PI * 2), r.Next(radius * (1 - p / pointCount)))
-                                )
-                            );
-
-
-                        
-                        DrawPoints(g, c, points);
-                        //points.ForEach(p => g.DrawLine(new Pen(c, 1), p.X - 2, p.Y, p.X + 2, p.Y));
-
-                        //Vector2 center = new Vector2(points.Sum(p => p.X), points.Sum(p => p.Y));
-                        //points.Sort((p1, p2) => Angle(p2 - center).CompareTo(Angle(p1 - center)));
-                        //DrawHull(g, c, points);
-
-                        var hull = GetHull(points);
-                        //DrawHull(g, c, points);
-                        DrawHull(g, c, hull);
-
-                    }
+                    var c = Color.Black;
+                    DrawPoints(g, c, points);
+                    var hull = GetHull(points);
+                    DrawHull(g, Color.Red, hull);
 
                 }
                 frame.Save($"Full.png", ImageFormat.Png);
