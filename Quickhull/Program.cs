@@ -36,80 +36,40 @@ namespace Quickhull {
             return Cross(ap, ab) > 0;
         }
         public static List<Vector2> GetHull(List<Vector2> points) {
-            List<Vector2> hull = new List<Vector2>();
-
             int firstIndex = 0;
-            Vector2 hullPoint = points[0];
+            Vector2 firstPoint = points[0];
             for (int i = 0; i < points.Count; i++) {
                 var p = points[i];
-                if (p.X > hullPoint.X) {
+                if (p.X > firstPoint.X) {
                     firstIndex = i;
-                    hullPoint = p;
+                    firstPoint = p;
                 }
             }
 
-            points.Sort((p1, p2) => {
-                if(p1 == hullPoint) {
-                    return -1;
-                } else if(p2 == hullPoint) {
-                    return 1;
-                }
+            List<Vector2> hull = new List<Vector2>();
+            hull.Add(firstPoint);
 
-                var o1 = p1 - hullPoint;
-                var o2 = p2 - hullPoint;
-                var result = Angle(o1).CompareTo(Angle(o2));
-                if(result == 0) {
-                    result = -o1.Length().CompareTo(o2.Length());
-                }
-                return result;
-            });
+            var sorted = points.AsParallel().OrderBy(p => Angle(p - firstPoint));
 
-
-            int index = points.IndexOf(hullPoint);
-
-            Vector2 nextPoint = hullPoint;
-
-            int frame = 0;
-            Directory.CreateDirectory("Frames");
-            do {
-                /*
-                frame++;
-                using (Bitmap b = new Bitmap(size, size)) {
-                    using (Graphics g = Graphics.FromImage(b)) {
-                        g.FillRectangle(new SolidBrush(Color.White), 0, 0, size, size);
-                        DrawPoints(g, Color.Black, points);
-                        DrawHull(g, Color.Black, hull);
-                    }
-                    b.Save($"Frames/{frame}.png", ImageFormat.Png);
-                }
-                */
-                hull.Add(hullPoint);
-
-                index = (index + 1) % points.Count;
-                nextPoint = points[index];
-
+            foreach (var p in sorted) {
+                if(hull.Count>1)
                 //Remove any old edges that no longer work
-                for (int i = hull.Count - 1; i > 0; i--) {
-                    if (RightOf(hull[i - 1], hull[i], nextPoint)) {
+                for (int i = hull.Count - 1; i > Math.Max(0, hull.Count-50); i--) {
+                    if (RightOf(hull[i - 1], hull[i], p)) {
                         hull.RemoveAt(i);
                     } else {
                     }
                 }
-                /*
-                //Our initial edges might start at the center point
-                //Make sure to remove them when we reach the end
-                for (int i = 1; i < hull.Count; i++) {
-                    if (RightOf(hull[i - 1], hull[i], nextPoint)) {
-                        hull.RemoveAt(i);
-                    } else {
-                    }
+                if(RightOf(hull.Last(), hull[0], p)) {
+                    hull.RemoveAt(0);
                 }
-                */
 
+                hull.Add(p);
+            };
 
+            int index = points.IndexOf(firstPoint);
 
-                hullPoint = nextPoint;
-            } while (nextPoint != hull.First());
+            Vector2 nextPoint = firstPoint;
 
 
             return hull;
@@ -136,6 +96,12 @@ namespace Quickhull {
             }
         }
         static int size = 1600;
+
+
+        public static void Config(string name, List<Vector2> points) {
+
+        }
+
         public static void Main(string[] args) {
             Random r = new Random();
             Vector2 center = new Vector2(size / 2, size / 2);
@@ -152,9 +118,12 @@ namespace Quickhull {
                     int pointCount = 1000000;
                     List<Vector2> points = new List<Vector2>(
                         Enumerable.Range(0, pointCount).Select(
-                            p => new Vector2(r.Next(size - 4) + 2, r.Next(size - 4) + 2)
+                            //p => new Vector2(r.Next(size - 4) + 2, r.Next(size - 4) + 2)
                             //p => center + Polar(r.NextDouble() * Math.PI*2, r.NextDouble() * (size / 2) * (1 - p / pointCount))
                             //p => center + Polar(r.NextDouble() * Math.PI * 2, size / 4)
+                            //p => p < 10 ? (center + Polar(r.NextDouble() * Math.PI * 2, size / 2)) : center + Polar(r.NextDouble() * Math.PI * 2, size/8)
+                            //p => p < 10 ? (center + Polar(Math.PI/2, size / 2)) : center + Polar(r.NextDouble() * Math.PI * 2, size / 8)
+                            p => p < 10 ? (center + Polar(p * Math.PI / 2, size / 2)) : center + Polar(r.NextDouble() * Math.PI * 2, size / 8)
                         )); ;
 
                     var c = Color.Black;
