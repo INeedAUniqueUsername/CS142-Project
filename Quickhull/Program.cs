@@ -35,7 +35,12 @@ namespace Quickhull {
             Vector2 ap = p - a;
             return Cross(ap, ab) > 0;
         }
-        public static List<Vector2> GetHull(IEnumerable<Vector2> points) {
+        public static bool LeftOf(in Vector2 a, in Vector2 b, in Vector2 p) {
+            Vector2 ab = b - a;
+            Vector2 ap = p - a;
+            return Cross(ap, ab) < 0;
+        }
+        public static List<Vector2> GetHull(List<Vector2> points) {
             Vector2 firstPoint = points.First();
             foreach(var p in points) {
                 if (p.X > firstPoint.X) {
@@ -45,6 +50,7 @@ namespace Quickhull {
 
 
             List<Vector2> hull = new List<Vector2>();
+
             hull.Add(firstPoint);
 
             var sorted = points.AsParallel().OrderBy(p => Angle(p - firstPoint));
@@ -52,7 +58,7 @@ namespace Quickhull {
             foreach (var p in sorted) {
                 if (hull.Count > 1) {
                     //Remove any old edges that no longer work
-                    for (int i = hull.Count - 1; i > Math.Max(0, hull.Count - hull.Count); i--) {
+                    for (int i = hull.Count - 1; i > Math.Max(0, hull.Count - 100); i--) {
                         if (RightOf(hull[i - 1], hull[i], p)) {
                             hull.RemoveAt(i);
                         } else {
@@ -63,19 +69,36 @@ namespace Quickhull {
                 hull.Add(p);
             };
 
-            /*
-            for (int i = hull.Count - 2; i > 0; i--) {
-                if (RightOf(hull[i - 1], hull[i], hull[i + 1])) {
-                    hull.RemoveAt(i);
-                }
-            }
-
             if (RightOf(hull[hull.Count - 2], hull.Last(), hull[0])) {
                 hull.RemoveAt(hull.Count - 1);
             }
             if (RightOf(hull.Last(), hull.First(), hull[1])) {
                 hull.RemoveAt(0);
             }
+            //Bidirectional check
+            for (int i = hull.Count - 2; i > 0; i--) {
+                if (RightOf(hull[i - 1], hull[i], hull[i + 1])) {
+                    hull.RemoveAt(i);
+                } else if(LeftOf(hull[i + 1], hull[i], hull[i - 1])) {
+                    hull.RemoveAt(i);
+                }
+            }
+
+            /*
+            var endpoint = firstPoint;
+            do {
+                hull.Add(endpoint);
+                foreach(var p in points) {
+                    if (endpoint == hull.Last() || LeftOf(hull.Last(), endpoint, p)) {
+                        endpoint = p;
+                    }
+                }
+            } while (endpoint != hull.First());
+            */
+
+            /*
+            
+
             */
 
             /*
@@ -96,7 +119,8 @@ namespace Quickhull {
             return hull;
         }
         public static void DrawPoints(Graphics g, Color c, List<Vector2 > points) {
-            points.ForEach(p => g.FillEllipse(new SolidBrush(c), p.X - 1, p.Y - 1, 3, 3));
+            int size = 12;
+            points.ForEach(p => g.FillEllipse(new SolidBrush(c), (int)p.X - size/2, (int)p.Y - size/2, size, size));
 
             return;
             for(int i = 0; i < points.Count; i++) {
@@ -114,6 +138,9 @@ namespace Quickhull {
                     g.DrawLine(p, Point(p1), Point(p2));
                 }
                 g.DrawLine(p, Point(hull.First()), Point(hull.Last()));
+
+                int size = 6;
+                hull.ForEach(p => g.FillEllipse(new SolidBrush(c), (int)p.X - size / 2, (int)p.Y - size / 2, size, size));
             }
         }
         static int size = 1600;
@@ -124,12 +151,16 @@ namespace Quickhull {
                 using (Graphics g = Graphics.FromImage(frame)) {
                     g.FillRectangle(Brushes.White, 0, 0, size, size);
 
+                    //MAKE SURE we put all the points in a list so that it doesn't change behind our back
+                    //Since IEnumerable gives us new points every time
+                    List<Vector2> pointsList = new List<Vector2>(points);
 
                     var c = Color.Black;
-                    DrawPoints(g, c, points.ToList());
+                    DrawPoints(g, c, pointsList);
 
                     DateTime start = DateTime.Now;
-                    var hull = GetHull(points.ToList());
+                    var hull = GetHull(pointsList);
+
                     DateTime end = DateTime.Now;
                     DrawHull(g, Color.Red, hull);
                     double seconds = (end - start).TotalSeconds;
@@ -148,20 +179,27 @@ namespace Quickhull {
 
             int pointCount = 1000000;
             Directory.CreateDirectory("Results");
+            foreach(var f in Directory.GetFiles("Results")) {
+                File.Delete(f);
+            }
+            for(int i = 0; i < 100; i++)
+            Config("Starburst", Enumerable.Range(0, 100).Select(p => p < 10 ? (center + Polar(p * Math.PI / 2, size / 4)) : center + Polar(r.NextDouble() * Math.PI * 2, Math.Pow(2 * r.NextDouble(), 2) * size / 8)));
 
             Config("DustRing", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(p * Math.PI / 2, size / 2)) : center + Polar(r.NextDouble() * Math.PI * 2, Math.Pow(2 * r.NextDouble(), 2) * size / 8 - 50)));
 
-            Config("UniformCircle", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(p * Math.PI / 2, size / 2)) : center + Polar(r.NextDouble() * Math.PI * 2, Math.Sqrt(r.NextDouble() * 4) * size / 4)));
+            Config("UniformCircle", Enumerable.Range(0, pointCount).Select(p => center + Polar(r.NextDouble() * Math.PI * 2, Math.Sqrt(r.NextDouble() * 4) * size / 4)));
 
 
+            Config("Ring", Enumerable.Range(0, pointCount).Select(p => center + Polar(r.NextDouble() * Math.PI * 2, size / 4)));
+            Config("TwoRing", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(r.NextDouble() * Math.PI * 2, size / 2)) : center + Polar(r.NextDouble() * Math.PI * 2, size / 8)));
 
             Config("FullSquare", Enumerable.Range(0, pointCount).Select(
                             p => new Vector2(r.Next(size - 4) + 2, r.Next(size - 4) + 2)));
             Config("FullCircle", Enumerable.Range(0, pointCount).Select(p => center + Polar(r.NextDouble() * Math.PI * 2, r.NextDouble() * (size / 2) * (1 - p / pointCount))));
-            Config("Ring", Enumerable.Range(0, pointCount).Select(p => center + Polar(r.NextDouble() * Math.PI * 2, size / 4)));
-            Config("TwoRing", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(r.NextDouble() * Math.PI * 2, size / 2)) : center + Polar(r.NextDouble() * Math.PI * 2, size / 8)));
             Config("SnowCone", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(Math.PI / 2, size / 2)) : center + Polar(r.NextDouble() * Math.PI * 2, size / 8)));
             Config("DiamondRing", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(p * Math.PI / 2, size / 2)) : center + Polar(r.NextDouble() * Math.PI * 2, size / 8)));
+
+            Config("DiamondCircle", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(p * Math.PI / 2, size / 2)) : center + Polar(r.NextDouble() * Math.PI * 2, Math.Sqrt(r.NextDouble() * 4) * size / 4)));
 
 
             //goto Start;
