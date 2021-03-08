@@ -42,9 +42,9 @@ namespace Quickhull {
             Vector2 ap = p - a;
             return Cross(ap, ab) < 0;
         }
-        public static List<Vector2> GetHull(List<Vector2> points) {
+        public static List<Vector2> GetCorrectHull(List<Vector2> points) {
             Vector2 firstPoint = points.First();
-            foreach(var p in points) {
+            foreach (var p in points) {
                 if (p.X > firstPoint.X) {
                     firstPoint = p;
                 }
@@ -60,10 +60,37 @@ namespace Quickhull {
             foreach (var p in sorted) {
                 if (hull.Count > 1) {
                     //Remove any old edges that no longer work
+                    for (int i = hull.Count - 1; i > 0; i--) {
+                        if (RightOf(hull[i - 1], hull[i], p)) {
+                            hull.RemoveAt(i);
+                        }
+                    }
+                }
+                hull.Add(p);
+            };
+            return hull;
+        }
+        public static List<Vector2> GetHullFast(List<Vector2> points) {
+
+            Vector2 firstPoint = points.First();
+            foreach(var p in points) {
+                if (p.X > firstPoint.X) {
+                    firstPoint = p;
+                }
+            }
+
+            List<Vector2> hull = new List<Vector2>();
+
+            hull.Add(firstPoint);
+
+            var sorted = points.AsParallel().OrderBy(p => Angle(p - firstPoint)).Distinct();
+
+            foreach (var p in sorted) {
+                if (hull.Count > 1) {
+                    //Remove any old edges that no longer work
                     for (int i = hull.Count - 1; i > Max(0, hull.Count - 100); i--) {
                         if (RightOf(hull[i - 1], hull[i], p)) {
                             hull.RemoveAt(i);
-                        } else {
                         }
                     }
                 }
@@ -105,39 +132,6 @@ namespace Quickhull {
                 }
                 
             }
-
-            /*
-            var endpoint = firstPoint;
-            do {
-                hull.Add(endpoint);
-                foreach(var p in points) {
-                    if (endpoint == hull.Last() || LeftOf(hull.Last(), endpoint, p)) {
-                        endpoint = p;
-                    }
-                }
-            } while (endpoint != hull.First());
-            */
-
-            /*
-            
-
-            */
-
-            /*
-            int j = hull.Count - 1;
-            while(j > 0) {
-                var p = hull[j];
-                for (int i = j - 1; i > 0; i--) {
-                    if (RightOf(hull[i - 1], hull[i], p)) {
-                        hull.RemoveAt(i);
-                        j--;
-                    }
-                }
-                j--;
-            }
-            */
-
-
             return hull;
         }
         public static void DrawPoints(Graphics g, Color c, List<Vector2 > points) {
@@ -181,7 +175,7 @@ namespace Quickhull {
                     DrawPoints(g, c, pointsList);
 
                     DateTime start = DateTime.Now;
-                    var hull = GetHull(pointsList);
+                    var hull = GetHullFast(pointsList);
 
                     DateTime end = DateTime.Now;
                     DrawHull(g, Color.Red, hull);
@@ -196,7 +190,12 @@ namespace Quickhull {
 
         public static void Main(string[] args) {
             Random r = new Random();
-            Func<double, double> rand = max => r.NextDouble() * max;
+            Func<double, double> randf = max => r.NextDouble() * max;
+            Func<int, int> randi = max => r.Next(max);
+
+            Func<double, double, double> rangef = (min, max) => r.NextDouble() * (max - min) + min;
+            Func<int, int, int> rangei = (min, max) => (int) (r.NextDouble() * (max - min) + min);
+
 
             Vector2 center = new Vector2(size / 2, size / 2);
             //points.Sort((a, b) => Angle(a).CompareTo(Angle(b)));
@@ -207,65 +206,67 @@ namespace Quickhull {
                 File.Delete(f);
             }
 
-            Config("Parallelogram", Enumerable.Range(0, pointCount).Select(p => p switch {
-                int i when i < pointCount/2 =>    center + new Vector2((float)-rand(500), 200),
-                _ =>                    center + new Vector2((float)rand(500), -200)
+            int s = 10;
+            Config("MultiEye", Enumerable.Range(0, pointCount).Select(p => p switch {
+                int i when i < 10 => center + Polar(randf(PI * 2), size / 2),
+                _ => center + new Vector2((float)(randf(80) - 40), (float)(randf(80) - 40)) + new Vector2((int)(randf(s) - s/2), (int)(randf(s) - s/2)) * 160
             }));
 
             Config("Parallelogram", Enumerable.Range(0, pointCount).Select(p => p switch {
-                int i when i < pointCount/4 => center + new Vector2((float)-rand(500), 200),
-                int i when i < pointCount * 2/4 => center + new Vector2((float)rand(500), -200),
-                int i when i < pointCount * 3/4 => center + new Vector2((float)-rand(500), 400),
-                int i when i < pointCount => center + new Vector2((float)rand(500), -400)
+                int i when i < pointCount/2 =>    center + new Vector2((float)-randf(500), 200),
+                _ =>                    center + new Vector2((float)randf(500), -200)
+            }));
+
+            Config("Parallelogram", Enumerable.Range(0, pointCount).Select(p => p switch {
+                int i when i < pointCount/4 => center + new Vector2((float)-randf(500), 200),
+                int i when i < pointCount * 2/4 => center + new Vector2((float)randf(500), -200),
+                int i when i < pointCount * 3/4 => center + new Vector2((float)-randf(500), 400),
+                int i when i < pointCount => center + new Vector2((float)randf(500), -400)
             }));
 
 
             Config("Trapezoid", Enumerable.Range(0, pointCount).Select(p => p switch {
-                int i when i < pointCount / 4 => center + new Vector2((float)-rand(500) - 100, 200),
-                int i when i < pointCount / 2 => center + new Vector2((float)rand(500) + 100, -200),
-                int i when i < pointCount * 3/4 => center + new Vector2((float)-rand(500) - 100, 400),
-                int i when i < pointCount => center + new Vector2((float)rand(500) + 100, -400)
+                int i when i < pointCount / 4 => center + new Vector2((float)-randf(500) - 100, 200),
+                int i when i < pointCount / 2 => center + new Vector2((float)randf(500) + 100, -200),
+                int i when i < pointCount * 3/4 => center + new Vector2((float)-randf(500) - 100, 400),
+                int i when i < pointCount => center + new Vector2((float)randf(500) + 100, -400)
             }));
 
 
             Config("Atom", Enumerable.Range(0, pointCount).Select(p => p switch {
-                int i when i < 10 => center + Polar(rand(PI * 2), size / 2),
+                int i when i < 10 => center + Polar(randf(PI * 2), size / 2),
                 _ => center
             }));
             Config("Eye", Enumerable.Range(0, pointCount).Select(p => p switch {
-                int i when i < 10 => center + Polar(rand(PI * 2), size / 2),
-                _ => center + new Vector2((float)(rand(100)-50), (float)(rand(100)-50))
-            }));
-            Config("MultiEye", Enumerable.Range(0, pointCount).Select(p => p switch {
-                int i when i < 10 => center + Polar(rand(PI * 2), size / 2),
-                _ => center + new Vector2((float)(rand(100) - 50), (float)(rand(100) - 50)) + new Vector2((float)(rand(12)-6), (float)(rand(12)-6))*20 
+                int i when i < 10 => center + Polar(randf(PI * 2), size / 2),
+                _ => center + new Vector2((float)(randf(100)-50), (float)(randf(100)-50))
             }));
 
             Config("MultiRing", Enumerable.Range(0, pointCount).Select(p => p switch {
-                int i when i < 10 => (center + Polar(rand(PI * 2), size / 2)),
-                int i when i < 30 => (center + Polar(rand(PI * 2), size / 2 - 160)),
-                int i when i < 60 => (center + Polar(rand(PI * 2), size / 2 - 320)),
-                int i when i < 100 => (center + Polar(rand(PI * 2), size / 2 - 480)),
-                int i when i < 150 => (center + Polar(rand(PI * 2), size / 2 - 640)),
+                int i when i < 10 => (center + Polar(randf(PI * 2), size / 2)),
+                int i when i < 30 => (center + Polar(randf(PI * 2), size / 2 - 160)),
+                int i when i < 60 => (center + Polar(randf(PI * 2), size / 2 - 320)),
+                int i when i < 100 => (center + Polar(randf(PI * 2), size / 2 - 480)),
+                int i when i < 150 => (center + Polar(randf(PI * 2), size / 2 - 640)),
 
-                int i when i < 210 => (center + Polar(rand(PI * 2), size / 2 - 800)),
+                int i when i < 210 => (center + Polar(randf(PI * 2), size / 2 - 800)),
 
-                _ => center + Polar(rand(PI * 2), size / 8)
+                _ => center + Polar(randf(PI * 2), size / 8)
             }));
             Config("MultiRing", Enumerable.Range(0, pointCount).Select(p => p switch {
-                int i when i < Pow(10, 1) => (center + Polar(rand(PI * 2), size / 2)),
-                int i when i < Pow(10, 2) => (center + Polar(rand(PI * 2), size / 2 - 160)),
-                int i when i < Pow(10, 3) => (center + Polar(rand(PI * 2), size / 2 - 320)),
-                int i when i < Pow(10, 4) => (center + Polar(rand(PI * 2), size / 2 - 480)),
-                int i when i < Pow(10, 5) => (center + Polar(rand(PI * 2), size / 2 - 640)),
+                int i when i < Pow(10, 1) => (center + Polar(randf(PI * 2), size / 2)),
+                int i when i < Pow(10, 2) => (center + Polar(randf(PI * 2), size / 2 - 160)),
+                int i when i < Pow(10, 3) => (center + Polar(randf(PI * 2), size / 2 - 320)),
+                int i when i < Pow(10, 4) => (center + Polar(randf(PI * 2), size / 2 - 480)),
+                int i when i < Pow(10, 5) => (center + Polar(randf(PI * 2), size / 2 - 640)),
 
-                _ => center + Polar(rand(PI * 2), size / 2 - 800)
+                _ => center + Polar(randf(PI * 2), size / 2 - 800)
             }));
 
-            Config("Starburst", Enumerable.Range(0, 100).Select(p => p switch {
+            Config("Starburst", Enumerable.Range(0, pointCount).Select(p => p switch {
 
                 int i when i < 10 => (center + Polar(p * PI / 2, size / 4)),
-                _ => center + Polar(rand(PI * 2), Pow(rand(2), 2) * size / 8)
+                _ => center + Polar(randf(PI * 2), Pow(randf(2), 2) * size / 8)
             }));
             /*
             Config("DustRing", Enumerable.Range(0, pointCount).Select(p => p switch {
@@ -278,21 +279,21 @@ namespace Quickhull {
                 p => center + Polar(rand(PI * 2), Sqrt(rand(4)) * size / 4)));
             */
 
-            Config("Ring", Enumerable.Range(0, pointCount).Select(p => center + Polar(rand(PI * 2), size / 4)));
+            Config("Ring", Enumerable.Range(0, pointCount).Select(p => center + Polar(randf(PI * 2), size / 4)));
             Config("TwoRing", Enumerable.Range(0, pointCount).Select(p => p switch {
-                int i when i < 10 => (center + Polar(rand(PI * 2), size / 2)),
-                _ => center + Polar(rand(PI * 2), size / 8)
+                int i when i < 10 => (center + Polar(randf(PI * 2), size / 2)),
+                _ => center + Polar(randf(PI * 2), size / 8)
             }));
 
 
 
             Config("FullSquare", Enumerable.Range(0, pointCount).Select(
                             p => new Vector2(r.Next(size - 4) + 2, r.Next(size - 4) + 2)));
-            Config("FullCircle", Enumerable.Range(0, pointCount).Select(p => center + Polar(rand(PI * 2), rand((size / 2) * (1 - p / pointCount)))));
-            Config("SnowCone", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(PI / 2, size / 2)) : center + Polar(rand(PI * 2), size / 8)));
-            Config("DiamondRing", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(p * PI / 2, size / 2)) : center + Polar(rand(PI * 2), size / 8)));
+            Config("FullCircle", Enumerable.Range(0, pointCount).Select(p => center + Polar(randf(PI * 2), randf((size / 2) * (1 - p / pointCount)))));
+            Config("SnowCone", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(PI / 2, size / 2)) : center + Polar(randf(PI * 2), size / 8)));
+            Config("DiamondRing", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(p * PI / 2, size / 2)) : center + Polar(randf(PI * 2), size / 8)));
 
-            Config("DiamondCircle", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(p * PI / 2, size / 2)) : center + Polar(rand(PI * 2), Sqrt(rand(4)) * size / 4)));
+            Config("DiamondCircle", Enumerable.Range(0, pointCount).Select(p => p < 10 ? (center + Polar(p * PI / 2, size / 2)) : center + Polar(randf(PI * 2), Sqrt(randf(4)) * size / 4)));
 
 
             //goto Start;
