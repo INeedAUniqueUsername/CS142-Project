@@ -21,6 +21,21 @@ namespace Quickhull {
         public static Point Point(in Vector2 v) {
             return new Point((int)v.X, (int)v.Y);
         }
+        public static double Slope(in Vector2 left, in Vector2 right) {
+
+            double x = right.X - left.X, y = right.Y - left.Y;
+
+            return x switch {
+                0 => y > 0 ? double.MaxValue : double.MinValue,
+                _ => y / x
+            };
+        }
+        public static double Slope(in Vector2 v) {
+            return v.X switch {
+                0 => v.Y > 0 ? double.MaxValue : double.MinValue,
+                _ => v.Y / v.X
+            };
+        }
         public static double Angle(in Vector2 v) {
             var angle = Atan2(v.Y, v.X);
             while(angle < 0) {
@@ -41,6 +56,18 @@ namespace Quickhull {
             Vector2 ab = b - a;
             Vector2 ap = p - a;
             return Cross(ap, ab) < 0;
+        }
+        public static bool Inside(in Vector2 east, in Vector2 north, in Vector2 west, in Vector2 south, in Vector2 point) {
+            return LeftOf(east, north, point)
+                && LeftOf(north, west, point)
+                && LeftOf(west, south, point)
+                && LeftOf(south, east, point);
+        }
+        public static bool Outside(in Vector2 east, in Vector2 north, in Vector2 west, in Vector2 south, in Vector2 point) {
+            return RightOf(east, north, point)
+                && RightOf(north, west, point)
+                && RightOf(west, south, point)
+                && RightOf(south, east, point);
         }
         public static List<Vector2> GetCorrectHull(List<Vector2> points) {
             Vector2 firstPoint = points.First();
@@ -71,18 +98,29 @@ namespace Quickhull {
             return hull;
         }
         public static List<Vector2> GetHullFast(List<Vector2> points) {
-
-            Vector2 firstPoint = points.First();
+            Vector2 north = points.First(),
+                    east = points.First(),
+                    south = points.First(),
+                    west = points.First();
             foreach(var p in points) {
-                if (p.X > firstPoint.X) {
-                    firstPoint = p;
+                if (p.X > east.X) {
+                    east = p;
+                } else if(p.X < west.X) {
+                    west = p;
+                }
+
+                if(p.Y > north.Y) {
+                    north = p;
+                } else if(p.Y < south.Y) {
+                    south = p;
                 }
             }
-
             List<Vector2> hull = new List<Vector2>();
+            hull.Add(east);
 
-            hull.Add(firstPoint);
-            var sorted = points.AsParallel().OrderBy(p => Angle(p - firstPoint)).Distinct();
+
+            points.RemoveAll(p => Inside(east, north, west, south, p));
+            var sorted = points.AsParallel().OrderBy(p => Slope(p, east)).Distinct();
             
             //Vector2 center = new Vector2(points.Average(p => p.X), points.Average(p => p.Y));
             //var sorted = points.AsParallel().OrderBy(p => Angle(p - center)).Distinct();
