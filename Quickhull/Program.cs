@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using static Quickhull.Program;
 
 using static System.Math;
@@ -52,12 +53,19 @@ namespace Quickhull {
             Vector2 ap = p - a;
             return Cross(ap, ab) > 0;
         }
+        public static bool RightOfInclusive(in Vector2 a, in Vector2 b, in Vector2 p) {
+            Vector2 ab = b - a;
+            Vector2 ap = p - a;
+            return Cross(ap, ab) >= 0;
+        }
+
         public static bool LeftOf(in Vector2 a, in Vector2 b, in Vector2 p) {
             Vector2 ab = b - a;
             Vector2 ap = p - a;
             return Cross(ap, ab) < 0;
         }
-        public static bool Inside(in Vector2 east, in Vector2 north, in Vector2 west, in Vector2 south, in Vector2 point) {
+        /*
+        public static bool Inside(in Vector2 point, in Vector2 east, in Vector2 north, in Vector2 west, in Vector2 south) {
             return LeftOf(east, north, point)
                 && LeftOf(north, west, point)
                 && LeftOf(west, south, point)
@@ -69,6 +77,20 @@ namespace Quickhull {
                 && RightOf(west, south, point)
                 && RightOf(south, east, point);
         }
+        */
+        public static bool Inside(Vector2 point, params Vector2[] vertices) {
+            return Enumerable.Range(0, vertices.Length).All(
+                i => LeftOf(vertices[i], vertices[(i + 1) % vertices.Length], point));
+        }
+        public static bool Outside(Vector2 point, params Vector2[] vertices) {
+            return Enumerable.Range(0, vertices.Length).Any(
+                i => RightOf(vertices[i], vertices[(i + 1) % vertices.Length], point));
+        }
+        public static bool OutsideInclusive(Vector2 point, params Vector2[] vertices) {
+            return Enumerable.Range(0, vertices.Length).Any(
+                i => RightOfInclusive(vertices[i], vertices[(i + 1) % vertices.Length], point));
+        }
+
         public static List<Vector2> GetCorrectHull(List<Vector2> points) {
             Vector2 firstPoint = points.First();
             foreach (var p in points) {
@@ -99,19 +121,39 @@ namespace Quickhull {
         }
         public static List<Vector2> GetHullFast(List<Vector2> points) {
             Vector2 north = points.First(),
+                    northEast = points.First(),
                     east = points.First(),
+                    southEast = points.First(),
                     south = points.First(),
-                    west = points.First();
+                    southWest = points.First(),
+                    west = points.First(),
+                    northWest = points.First();
             foreach(var p in points) {
                 if (p.X > east.X) {
                     east = p;
-                } else if(p.X < west.X) {
+                }
+                if(p.X < west.X) {
                     west = p;
                 }
 
-                if(p.Y > north.Y) {
+                if(p.X + p.Y > northEast.X + northEast.Y) {
+                    northEast = p;
+                }
+                if (-p.X + p.Y > -northWest.X + northWest.Y) {
+                    northWest = p;
+                }
+
+                if (p.X - p.Y > southEast.X + southEast.Y) {
+                    southEast = p;
+                }
+                if (-p.X - p.Y > southWest.X + southWest.Y) {
+                    southWest = p;
+                }
+
+                if (p.Y > north.Y) {
                     north = p;
-                } else if(p.Y < south.Y) {
+                } 
+                if(p.Y < south.Y) {
                     south = p;
                 }
             }
@@ -119,8 +161,11 @@ namespace Quickhull {
             hull.Add(east);
 
 
-            points.RemoveAll(p => Inside(east, north, west, south, p));
-            var sorted = points.AsParallel().OrderBy(p => Slope(p, east)).Distinct();
+            //points.RemoveAll(p => Inside(p, east, north, west, south));
+            var sorted = points.Distinct()
+                .Where(p => OutsideInclusive(p, east, north, west, south))
+                .Where(p => OutsideInclusive(p, east, northEast, north, northWest, west, southWest, south, south, southEast))
+                .AsParallel().OrderBy(p => Slope(p, east));
             
             //Vector2 center = new Vector2(points.Average(p => p.X), points.Average(p => p.Y));
             //var sorted = points.AsParallel().OrderBy(p => Angle(p - center)).Distinct();
@@ -128,9 +173,15 @@ namespace Quickhull {
             foreach (var p in sorted) {
                 if (hull.Count > 1) {
                     //Remove any old edges that no longer work
-                    for (int i = hull.Count - 1; i > Max(0, hull.Count - 100); i--) {
+                    int good = 0;
+                    for (int i = hull.Count - 1; i > 0; i--) {
                         if (RightOf(hull[i - 1], hull[i], p)) {
                             hull.RemoveAt(i);
+                        } else {
+                            good++;
+                            if (good > 100) {
+                                break;
+                            }
                         }
                     }
                 }
