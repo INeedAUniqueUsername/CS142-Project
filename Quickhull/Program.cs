@@ -163,7 +163,7 @@ namespace Quickhull {
 
             //points.RemoveAll(p => Inside(p, east, north, west, south));
             var sorted = points.Distinct()
-                .Where(p => OutsideInclusive(p, east, north, west, south))
+                //.Where(p => OutsideInclusive(p, east, north, west, south))
                 .Where(p => OutsideInclusive(p, east, northEast, north, northWest, west, southWest, south, south, southEast))
                 .AsParallel().OrderBy(p => Slope(p, east));
             
@@ -175,11 +175,12 @@ namespace Quickhull {
                     //Remove any old edges that no longer work
                     int good = 0;
                     for (int i = hull.Count - 1; i > 0; i--) {
-                        if (RightOf(hull[i - 1], hull[i], p)) {
+                        //If our angle with the last point is the same as the last point's angle with the next last point, remove that last point anyway.
+                        if (RightOfInclusive(hull[i - 1], hull[i], p)) {
                             hull.RemoveAt(i);
                         } else {
                             good++;
-                            if (good > 100) {
+                            if (good > 10) {
                                 break;
                             }
                         }
@@ -187,42 +188,6 @@ namespace Quickhull {
                 }
                 hull.Add(p);
             };
-
-            Check();
-            Check();
-            Check();
-            void Check() {
-                while (RightOf(hull.Last(), hull.First(), hull[1])) {
-                    hull.RemoveAt(0);
-                }
-                while (RightOf(hull[hull.Count - 2], hull.Last(), hull[0])) {
-                    hull.RemoveAt(hull.Count - 1);
-                }
-
-                for (int i = hull.Count - 2; i > 0;) {
-                    if (RightOf(hull[i - 1], hull[i], hull[i + 1])) {
-                        hull.RemoveAt(i);
-                        i = Min(hull.Count - 2, i + 2);
-                    } else if (LeftOf(hull[i + 1], hull[i], hull[i - 1])) {
-                        hull.RemoveAt(i);
-                        i = Min(hull.Count - 2, i + 2);
-                    } else {
-                        i--;
-                    }
-                }
-                for (int i = 1; i < hull.Count - 1;) {
-                    if (RightOf(hull[i - 1], hull[i], hull[i + 1])) {
-                        hull.RemoveAt(i);
-                        i = Max(0, i - 2);
-                    } else if (LeftOf(hull[i + 1], hull[i], hull[i - 1])) {
-                        hull.RemoveAt(i);
-                        i = Max(0, i - 2);
-                    } else {
-                        i++;
-                    }
-                }
-                
-            }
             return hull;
         }
         public static void DrawPoints(Graphics g, Color c, List<Vector2 > points) {
@@ -271,6 +236,8 @@ namespace Quickhull {
                     DateTime end = DateTime.Now;
                     DrawHull(g, Color.Red, hull);
                     double seconds = (end - start).TotalSeconds;
+
+                    Console.WriteLine($"{name}: {seconds} seconds");
 
                     name = $"Results/{name} - {seconds} seconds.png";
 
