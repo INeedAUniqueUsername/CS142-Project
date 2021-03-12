@@ -160,15 +160,24 @@ namespace Quickhull {
             List<Vector2> hull = new List<Vector2>();
             hull.Add(east);
 
-
-            //points.RemoveAll(p => Inside(p, east, north, west, south));
+            /*
             var sorted = points.Distinct()
-                //.Where(p => OutsideInclusive(p, east, north, west, south))
                 .Where(p => OutsideInclusive(p, east, northEast, north, northWest, west, southWest, south, south, southEast))
                 .AsParallel().OrderBy(p => Slope(p, east));
-            
-            //Vector2 center = new Vector2(points.Average(p => p.X), points.Average(p => p.Y));
-            //var sorted = points.AsParallel().OrderBy(p => Angle(p - center)).Distinct();
+            */
+            /*
+            var sorted = points.Distinct()
+                .AsParallel().Where(p => OutsideInclusive(p, east, northEast, north, northWest, west, southWest, south, southEast))
+                .OrderBy(p => Slope(p, east));
+            */
+            //var sorted = points.Distinct().AsParallel().OrderBy(p => Slope(p, east));
+            var sorted = points
+                //.Distinct()
+
+                .Where(p => OutsideInclusive(p, east, north, west, south))
+                .AsParallel()
+                .OrderBy(p =>
+                Slope(p, east));
 
             foreach (var p in sorted) {
                 if (hull.Count > 1) {
@@ -218,7 +227,7 @@ namespace Quickhull {
         static int size = 1600;
 
 
-        public static void Config(string name, IEnumerable<Vector2> points) {
+        public static void Config2(string name, IEnumerable<Vector2> points) {
             using (Bitmap frame = new Bitmap(size, size)) {
                 using (Graphics g = Graphics.FromImage(frame)) {
                     g.FillRectangle(Brushes.White, 0, 0, size, size);
@@ -245,6 +254,15 @@ namespace Quickhull {
                 frame.Save(name, ImageFormat.Png);
             }
         }
+        public static void Config(string name, IEnumerable<Vector2> points) {
+
+            List<Vector2> pointsList = new List<Vector2>(points);
+            DateTime start = DateTime.Now;
+            var hull = GetHullFast(pointsList);
+            DateTime end = DateTime.Now;
+            double seconds = (end - start).TotalSeconds;
+            Console.WriteLine($"{$"{name}:", -16}{seconds} seconds");
+        }
 
         public static void Main(string[] args) {
             Random r = new Random();
@@ -258,7 +276,7 @@ namespace Quickhull {
             Vector2 center = new Vector2(size / 2, size / 2);
             //points.Sort((a, b) => Angle(a).CompareTo(Angle(b)));
 
-            int pointCount = 1000000;
+            int pointCount = 10000000;
             Directory.CreateDirectory("Results");
             foreach (var f in Directory.GetFiles("Results")) {
                 File.Delete(f);
